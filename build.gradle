@@ -1,0 +1,63 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+}
+
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Loom adds the essential Fabric/Minecraft maven repositories automatically.
+    // Anything ActionHud needs beyond that goes here.
+    mavenCentral()
+}
+
+dependencies {
+    // To change these versions, edit gradle.properties.
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API. ActionHud only needs the client rendering / event / keybinding
+    // modules, but we depend on the umbrella artifact for simplicity, matching
+    // the official Fabric example mod template.
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+
+    filesMatching('fabric.mod.json') {
+        expand 'version': inputs.properties.version
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    // ActionHud's Javadoc is documentation for contributors reading the source,
+    // not a published API surface, so we don't fail the build over minor
+    // @param/@return omissions on private helper methods.
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+tasks.named('jar') {
+    from('LICENSE') {
+        rename { "${it}_ActionHud" }
+    }
+}
